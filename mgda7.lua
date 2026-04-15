@@ -2,10 +2,9 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
-
-local Player = Players.LocalPlayer
+local UserInputService = UserInputService
 local Camera = Workspace.CurrentCamera
+local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- // GUI PRINCIPAL
@@ -54,7 +53,6 @@ FOVCircle.Size = UDim2.new(0, 300, 0, 300)
 FOVCircle.Position = UDim2.new(0.5, -150, 0.5, -150)
 FOVCircle.Visible = false
 
--- BORDA BRANCA
 local Border = Instance.new("UIStroke")
 Border.Thickness = 2
 Border.Color = Color3.new(1, 1, 1)
@@ -267,35 +265,30 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- ==============================================
--- // ESP CAIXA E LINHA (FUNCIONANDO 100%)
+-- // SISTEMA DE ESP QUE FUNCIONA DE VERDADE
 -- ==============================================
+local function WorldToViewportPoint(Vector)
+    local Point, OnScreen = Camera:WorldToViewportPoint(Vector)
+    return Vector2.new(Point.X, Point.Y), OnScreen
+end
+
 local function CreateESP(player)
     if player == Player then return end
     
-    local esp = {
-        Box = nil,
-        Line = nil
-    }
+    local esp = {}
     
-    -- CAIXA VERDE DO TAMANHO DO PLAYER
-    esp.Box = Instance.new("BoxHandleAdornment")
-    esp.Box.Name = "ESP_Box_"..player.Name
-    esp.Box.Parent = Workspace
-    esp.Box.Thickness = 3
-    esp.Box.Transparency = 1
-    esp.Box.AlwaysOnTop = true
-    esp.Box.ZIndex = 10
-    esp.Box.Color3 = Color3.new(0, 1, 0)
+    -- CAIXA VERDE
+    esp.Box = Drawing.new("Square")
+    esp.Box.Color = Color3.new(0, 1, 0)
+    esp.Box.Thickness = 2
+    esp.Box.Filled = false
+    esp.Box.Visible = false
     
-    -- LINHA VERDE DO TOPO ATÉ A CABEÇA
-    esp.Line = Instance.new("LineHandleAdornment")
-    esp.Line.Name = "ESP_Line_"..player.Name
-    esp.Line.Parent = Workspace
-    esp.Line.Thickness = 3
-    esp.Line.Transparency = 1
-    esp.Line.AlwaysOnTop = true
-    esp.Line.ZIndex = 10
-    esp.Line.Color3 = Color3.new(0, 1, 0)
+    -- LINHA VERDE
+    esp.Line = Drawing.new("Line")
+    esp.Line.Color = Color3.new(0, 1, 0)
+    esp.Line.Thickness = 2
+    esp.Line.Visible = false
     
     ESPObjects[player] = esp
 end
@@ -312,15 +305,38 @@ local function UpdateESP()
                 local hrp = char.HumanoidRootPart
                 local head = char.Head
                 
-                -- CAIXA NO CORPO INTEIRO
-                ESPObjects[player].Box.Size = Vector3.new(2, 3, 1)
-                ESPObjects[player].Box.CFrame = hrp.CFrame * CFrame.new(0, 1.5, 0)
-                ESPObjects[player].Box.Visible = _G.ESP_Box
+                -- ATUALIZAR CAIXA
+                if _G.ESP_Box then
+                    local Vector, OnScreen = WorldToViewportPoint(hrp.Position)
+                    local Vector2, OnScreen2 = WorldToViewportPoint(hrp.Position + Vector3.new(0, 3, 0))
+                    
+                    if OnScreen and OnScreen2 then
+                        local Height = math.abs(Vector.Y - Vector2.Y)
+                        local Width = Height / 1.8
+                        
+                        ESPObjects[player].Box.Size = Vector2.new(Width, Height)
+                        ESPObjects[player].Box.Position = Vector - Vector2.new(Width / 2, Height / 2)
+                        ESPObjects[player].Box.Visible = true
+                    else
+                        ESPObjects[player].Box.Visible = false
+                    end
+                else
+                    ESPObjects[player].Box.Visible = false
+                end
                 
-                -- LINHA RETA DO TOPO ATÉ A CABEÇA
-                ESPObjects[player].Line.From = Vector3.new(Camera.CFrame.Position.X, Camera.CFrame.Position.Y + 15, Camera.CFrame.Position.Z)
-                ESPObjects[player].Line.To = head.Position
-                ESPObjects[player].Line.Visible = _G.ESP_Line
+                -- ATUALIZAR LINHA
+                if _G.ESP_Line then
+                    local HeadPos, OnScreen = WorldToViewportPoint(head.Position)
+                    if OnScreen then
+                        ESPObjects[player].Line.From = Vector2.new(Camera.ViewportSize.X / 2, 0) -- TOPO DA TELA
+                        ESPObjects[player].Line.To = HeadPos
+                        ESPObjects[player].Line.Visible = true
+                    else
+                        ESPObjects[player].Line.Visible = false
+                    end
+                else
+                    ESPObjects[player].Line.Visible = false
+                end
             else
                 if ESPObjects[player] then
                     ESPObjects[player].Box.Visible = false
@@ -336,12 +352,8 @@ end
 -- ==============================================
 Players.PlayerRemoving:Connect(function(player)
     if ESPObjects[player] then
-        if ESPObjects[player].Box then
-            ESPObjects[player].Box:Destroy()
-        end
-        if ESPObjects[player].Line then
-            ESPObjects[player].Line:Destroy()
-        end
+        ESPObjects[player].Box:Remove()
+        ESPObjects[player].Line:Remove()
         ESPObjects[player] = nil
     end
 end)
