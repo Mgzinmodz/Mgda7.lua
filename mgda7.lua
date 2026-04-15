@@ -10,7 +10,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui", PlayerGui)
-ScreenGui.Name = "MG"
+ScreenGui.Name = "MGCHEATS"
 ScreenGui.ResetOnSpawn = false
 
 -- BOTÃO
@@ -35,13 +35,13 @@ local function CreateESP(plr)
     local box = Instance.new("BoxHandleAdornment")
     box.AlwaysOnTop = true
     box.ZIndex = 10
-    box.Size = Vector3.new(4,6,2)
+    box.Size = Vector3.new(3,5,2)
     box.Color3 = Color3.new(0,1,0)
     box.Transparency = 0.5
     box.Parent = Workspace
 
     local line = Instance.new("Beam")
-    line.Color = ColorSequence.new(Color3.new(1,0,0))
+    line.Color = ColorSequence.new(Color3.new(0,1,0))
     line.Width0 = 0.1
     line.Width1 = 0.1
 
@@ -61,7 +61,7 @@ local function CreateESP(plr)
 end
 
 -- UPDATE
-local function UpdateESP()
+RunService.Heartbeat:Connect(function()
     for _,plr in pairs(Players:GetPlayers()) do
         if plr ~= Player then
             if not ESP[plr] then
@@ -76,7 +76,7 @@ local function UpdateESP()
                 ESP[plr].Box.Adornee = hrp
                 ESP[plr].Box.Visible = _G.ESP_Box
 
-                -- LINE
+                -- LINE (da câmera direto)
                 ESP[plr].A0.WorldPosition = Camera.CFrame.Position
                 ESP[plr].A1.WorldPosition = hrp.Position
                 ESP[plr].Line.Enabled = _G.ESP_Line
@@ -86,14 +86,12 @@ local function UpdateESP()
             end
         end
     end
-end
+end)
 
-RunService.Heartbeat:Connect(UpdateESP)
-
--- BOTÃO TOGGLE
+-- BOTÃO
 Button.MouseButton1Click:Connect(function()
     _G.ESP_Box = not _G.ESP_Box
     _G.ESP_Line = not _G.ESP_Line
 end)
 
-print("✅ ESP FULL FUNCIONANDO")
+print("✅ MG ESP FIXADO")
